@@ -23,8 +23,10 @@ public class QR {
         int[] finalList = CombineArrays(messageBytes, eccBytes);
         PrintArray(finalList);
 
-        String BinaryList = ConvertToBinary(finalList);
-        System.out.println(BinaryList);
+        /*
+         * String BinaryList = ConvertToBinary(finalList);
+         * System.out.println(BinaryList);
+         */
 
         return new File("C:/");
     }
@@ -109,5 +111,57 @@ public class QR {
             finalStr += padByteString(Integer.toBinaryString(data[i]), 8);
         }
         return finalStr;
+    }
+
+    public static int[][] QRCodePattern(int[] finalList) {
+        int[][] pattern = new int[21][21];
+
+        pattern = AddFinderPattern(pattern, 0, 0);
+        pattern = AddFinderPattern(pattern, 14, 0);
+        pattern = AddFinderPattern(pattern, 0, 14);
+
+        pattern = AddTimingPattern(pattern);
+
+        // FINDER PATTERN AND TIMING PATTERNS ADDED
+
+        return pattern;
+    }
+
+    public static int[][] AddFinderPattern(int[][] inList, int xIndex, int yIndex) {
+        int[][] finalList = inList;
+        if (xIndex > 14) {
+            System.out.println("Too far right");
+        }
+        if (yIndex > 14) {
+            System.out.println("Too far down");
+        }
+
+        for (int i = 0; i < 7; i++) {
+            for (int j = 0; j < 7; j++) {
+                if (i == 0 || i == 6) {
+                    finalList[j + yIndex][i + xIndex] = 1;
+                }
+                if (j == 0 || j == 6) {
+                    finalList[j + yIndex][i + xIndex] = 1;
+                }
+                if (i > 1 && i < 5 && j > 1 && j < 5) {
+                    finalList[j + yIndex][i + xIndex] = 1;
+                }
+            }
+        }
+        return finalList;
+    }
+
+    public static int[][] AddTimingPattern(int[][] inList) {
+        int[][] finalList = inList;
+        finalList[8][6] = 1;// 8, 10, 12
+        finalList[10][6] = 1;// 8, 10, 12
+        finalList[12][6] = 1;// 8, 10, 12
+
+        finalList[6][8] = 1;
+        finalList[6][10] = 1;
+        finalList[6][12] = 1;
+
+        return finalList;
     }
 }
