@@ -117,8 +117,8 @@ public class QR {
         int[][] pattern = new int[21][21];
 
         pattern = AddFinderPattern(pattern, 0, 0);
-        pattern = AddFinderPattern(pattern, 14, 0);
-        pattern = AddFinderPattern(pattern, 0, 14);
+        pattern = AddFinderPattern(pattern, 12, 0);
+        pattern = AddFinderPattern(pattern, 0, 12);
 
         pattern = AddTimingPattern(pattern);
 
@@ -129,23 +129,26 @@ public class QR {
 
     public static int[][] AddFinderPattern(int[][] inList, int xIndex, int yIndex) {
         int[][] finalList = inList;
-        if (xIndex > 14) {
+        if (xIndex > 12) {
             System.out.println("Too far right");
         }
-        if (yIndex > 14) {
+        if (yIndex > 12) {
             System.out.println("Too far down");
         }
 
-        for (int i = 0; i < 7; i++) {
-            for (int j = 0; j < 7; j++) {
-                if (i == 0 || i == 6) {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                if (i == 1 || i == 7) {
                     finalList[j + yIndex][i + xIndex] = 1;
                 }
-                if (j == 0 || j == 6) {
+                if (j == 1 || j == 7) {
                     finalList[j + yIndex][i + xIndex] = 1;
                 }
-                if (i > 1 && i < 5 && j > 1 && j < 5) {
+                if (i > 2 && i < 6 && j > 2 && j < 6) {
                     finalList[j + yIndex][i + xIndex] = 1;
+                }
+                if (i == 0 || i == 8 || j == 0 || j == 8) {
+                    finalList[j + yIndex][i + xIndex] = 2;
                 }
             }
         }
@@ -161,6 +164,8 @@ public class QR {
         finalList[6][8] = 1;
         finalList[6][10] = 1;
         finalList[6][12] = 1;
+
+        finalList[8][13] = 1;
 
         return finalList;
     }
