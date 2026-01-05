@@ -226,57 +226,45 @@ public class QR {
     }
 
     public static int[][] AddData(int[][] inList, String dataString) {
-        int dir = 0; // 0 up, 1 down
-        boolean isVertical = false;
         int[][] finalList = inList;
-
-        // if dir = 0 and !isVertical, go left
-        // if dir = 0 and isVertical, go up
-        // if dir = 1 and !isVertical, go left
-        // if dir = 1 and isVertical, go down
-        // start at bottom right, [20][20], then go left to [20][19]
-        int xPos = 20;
-        int yPos = 20;
         int dataIndex = 0;
-        while (dataIndex < dataString.length() && xPos >= 0 && yPos >= 0) {
-            if (finalList[yPos][xPos] == 0) {
-                finalList[yPos][xPos] = Character.getNumericValue(dataString.charAt(dataIndex));
-                dataIndex++;
+
+        // Start from rightmost column pair
+        int col = 20;
+        boolean goingUp = true;
+
+        while (col >= 0 && dataIndex < dataString.length()) {
+            // Skip column 6 (vertical timing pattern)
+            if (col == 6) {
+                col--;
+                continue;
             }
-            if (!isVertical) {
-                // moving horizontally
-                xPos--;
-                if (xPos % 2 == 1) {
-                    // switch to vertical
-                    isVertical = true;
+
+            // Process 2-column pair
+            for (int row = 0; row < 21; row++) {
+                int currentRow = goingUp ? (20 - row) : row;
+
+                // Right column of the pair
+                if (finalList[currentRow][col] == 0) {
+                    finalList[currentRow][col] = Character.getNumericValue(dataString.charAt(dataIndex));
+                    dataIndex++;
+                    if (dataIndex >= dataString.length())
+                        return finalList;
                 }
-            } else {
-                // moving vertically
-                if (dir == 0) {
-                    // moving up
-                    yPos--;
-                    if (yPos < 0) {
-                        // hit top, go left and change direction
-                        yPos = 0;
-                        xPos--;
-                        dir = 1;
-                        isVertical = false;
-                    }
-                } else {
-                    // moving down
-                    yPos++;
-                    if (yPos > 20) {
-                        // hit bottom, go left and change direction
-                        yPos = 20;
-                        xPos--;
-                        dir = 0;
-                        isVertical = false;
-                    }
+
+                // Left column of the pair
+                if (finalList[currentRow][col - 1] == 0) {
+                    finalList[currentRow][col - 1] = Character.getNumericValue(dataString.charAt(dataIndex));
+                    dataIndex++;
+                    if (dataIndex >= dataString.length())
+                        return finalList;
                 }
             }
+
+            // Move to next column pair and flip direction
+            col -= 2;
+            goingUp = !goingUp;
         }
-        System.out.println("Size:" + finalList.length);
-        // To be implemented
 
         return finalList;
     }
