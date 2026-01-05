@@ -1,10 +1,9 @@
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 
 public class QR {
 
     // Generate QR (Level 1-L) and return ECC bytes
-    public static File GenerateQRCode(String data) {
+    public static int[][] GenerateQRCode(String data) {
         System.out.println("Testing MUL: 64x1=" + Galois.Mul(64, 1));
         String rawDataBits = GetRawDataBits(data);
 
@@ -23,12 +22,12 @@ public class QR {
         int[] finalList = CombineArrays(messageBytes, eccBytes);
         PrintArray(finalList);
 
-        /*
-         * String BinaryList = ConvertToBinary(finalList);
-         * System.out.println(BinaryList);
-         */
+        String BinaryList = ConvertToBinary(finalList);
+        System.out.println(BinaryList);
 
-        return new File("C:/");
+        int[][] qrCode = QRCodePattern(finalList, BinaryList);
+
+        return qrCode;
     }
 
     // Convert data to raw bits
@@ -113,42 +112,76 @@ public class QR {
         return finalStr;
     }
 
-    public static int[][] QRCodePattern(int[] finalList) {
+    public static int[][] QRCodePattern(int[] finalList, String dataString) {
+        // 0 is white, 1 is black, 2 is reserved white, 3 is reserved unknown
         int[][] pattern = new int[21][21];
 
         pattern = AddFinderPattern(pattern, 0, 0);
-        pattern = AddFinderPattern(pattern, 12, 0);
-        pattern = AddFinderPattern(pattern, 0, 12);
+        pattern = AddFinderPattern(pattern, 14, 0);
+        pattern = AddFinderPattern(pattern, 0, 14);
 
         pattern = AddTimingPattern(pattern);
 
         // FINDER PATTERN AND TIMING PATTERNS ADDED
+
+        pattern = AddFormatInformation(pattern);
+
+        pattern = AddData(pattern, dataString);
 
         return pattern;
     }
 
     public static int[][] AddFinderPattern(int[][] inList, int xIndex, int yIndex) {
         int[][] finalList = inList;
-        if (xIndex > 12) {
+        if (xIndex > 14) {
             System.out.println("Too far right");
         }
-        if (yIndex > 12) {
+        if (yIndex > 14) {
             System.out.println("Too far down");
         }
 
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
-                if (i == 1 || i == 7) {
+        for (int i = 0; i < 7; i++) {
+            for (int j = 0; j < 7; j++) {
+                if (i == 0 || i == 6) {
                     finalList[j + yIndex][i + xIndex] = 1;
-                }
-                if (j == 1 || j == 7) {
+                } else if (j == 0 || j == 6) {
                     finalList[j + yIndex][i + xIndex] = 1;
-                }
-                if (i > 2 && i < 6 && j > 2 && j < 6) {
+                } else if (i > 1 && i < 5 && j > 1 && j < 5) {
                     finalList[j + yIndex][i + xIndex] = 1;
-                }
-                if (i == 0 || i == 8 || j == 0 || j == 8) {
+                } else {
                     finalList[j + yIndex][i + xIndex] = 2;
+                }
+            }
+        }
+        // outside finder pattern is 2, not 0
+        for (int i = 0; i < 8; i++) {
+            if (xIndex == 0) {
+                // left side
+                if (yIndex > 0) {
+                    // bottom left
+                    finalList[i][yIndex - 1] = 2;
+                    if (i == 7) {
+                        for (int j = 0; j < 8; j++) {
+                            finalList[7][yIndex - 1 + j] = 2;
+                        }
+                    }
+                } else {
+                    // top left
+                    finalList[i][yIndex + 7] = 2;
+                    if (i == 7) {
+                        for (int j = 0; j < 8; j++) {
+                            finalList[7][yIndex + 7 - j] = 2;
+                        }
+                    }
+                }
+            } else {
+                // top right
+                finalList[xIndex + i - 1][yIndex + 7] = 2;
+                if (i == 7) {
+                    for (int j = 0; j < 8; j++) {
+                        finalList[xIndex - 1][j] = 2;
+                        System.out.println("Setting " + xIndex + "," + j + " to 2");
+                    }
                 }
             }
         }
@@ -165,7 +198,85 @@ public class QR {
         finalList[6][10] = 1;
         finalList[6][12] = 1;
 
+        // dark module
         finalList[8][13] = 1;
+
+        return finalList;
+    }
+
+    public static int[][] AddFormatInformation(int[][] inList) {
+        int[][] finalList = inList;
+        // To be implemented
+        // top left
+        for (int i = 0; i < 9; i++) {
+            if (i != 6) {
+                finalList[8][i] = 3; // horizontal
+                finalList[i][8] = 3; // vertical
+            }
+        }
+        // top right
+        for (int i = 0; i < 8; i++) {
+            finalList[i + 13][8] = 3;
+        }
+        // bottom left
+        for (int i = 0; i < 7; i++) {
+            finalList[8][i + 14] = 3;
+        }
+        return finalList;
+    }
+
+    public static int[][] AddData(int[][] inList, String dataString) {
+        int dir = 0; // 0 up, 1 down
+        boolean isVertical = false;
+        int[][] finalList = inList;
+
+        // if dir = 0 and !isVertical, go left
+        // if dir = 0 and isVertical, go up
+        // if dir = 1 and !isVertical, go left
+        // if dir = 1 and isVertical, go down
+        // start at bottom right, [20][20], then go left to [20][19]
+        int xPos = 20;
+        int yPos = 20;
+        int dataIndex = 0;
+        while (dataIndex < dataString.length() && xPos >= 0 && yPos >= 0) {
+            if (finalList[yPos][xPos] == 0) {
+                finalList[yPos][xPos] = Character.getNumericValue(dataString.charAt(dataIndex));
+                dataIndex++;
+            }
+            if (!isVertical) {
+                // moving horizontally
+                xPos--;
+                if (xPos % 2 == 1) {
+                    // switch to vertical
+                    isVertical = true;
+                }
+            } else {
+                // moving vertically
+                if (dir == 0) {
+                    // moving up
+                    yPos--;
+                    if (yPos < 0) {
+                        // hit top, go left and change direction
+                        yPos = 0;
+                        xPos--;
+                        dir = 1;
+                        isVertical = false;
+                    }
+                } else {
+                    // moving down
+                    yPos++;
+                    if (yPos > 20) {
+                        // hit bottom, go left and change direction
+                        yPos = 20;
+                        xPos--;
+                        dir = 0;
+                        isVertical = false;
+                    }
+                }
+            }
+        }
+        System.out.println("Size:" + finalList.length);
+        // To be implemented
 
         return finalList;
     }
